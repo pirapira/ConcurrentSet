@@ -1,12 +1,16 @@
 
+import Data.IORef
+
 lst_min :: Integer 
 lst_min = 0
 
-data Lst = Cons Integer Lst | Nil
-data Set = SCons Integer Lst
+data Lst = Cons Integer (IORef Lst) | Nil
+data Set = SCons Integer (IORef Lst)
 
-init :: Set
-init = SCons lst_min Nil
+init :: IO Set
+init = do 
+  newref <- newIORef Nil 
+  return $ SCons lst_min newref
 
 {-         
 insert :: Set -> Integer -> Set
@@ -16,10 +20,18 @@ insert (Cons hd tl) b | b == hd = Cons hd tl
 insert (Cons hd tl) b | b > hd = Cons hd $ insert tl b
 -}
 
-locate :: Set -> Integer -> (Lst , Lst)
-locate (SCons hd (Cons next rest)) k | k < next = locate (SCons next rest) k
-locate (SCons hd tail) _ = (Cons hd tail, tail)
+locate :: Set -> Integer -> IO (Lst, Lst)
+locate (SCons pval current) k = do
+    current_content <- readIORef current 
+    case current_content of
+      Nil -> return (Cons pval current, Nil)
+      Cons cval rest ->
+          if cval < k then locate (SCons cval rest) k
+          else return (Cons pval current, Cons cval rest)
 
-contains :: Set -> Integer -> Bool
-contains s k = hd == k
-    where (_, (Cons hd _)) = locate s k
+contains :: Set -> Integer -> IO Bool
+contains s k = do
+    (_, (Cons hd _)) <- locate s k
+    return $ hd == k
+
+
