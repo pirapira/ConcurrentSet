@@ -1,4 +1,10 @@
 
+{- 
+Todo:
+- generalize Integer to some totally ordered type
+- introduce bottom via lifting
+-}
+
 import Data.IORef
 
 lst_min :: Integer 
@@ -11,14 +17,6 @@ init :: IO Set
 init = do 
   newref <- newIORef Nil 
   return $ SCons lst_min newref
-
-{-         
-insert :: Set -> Integer -> Set
-insert Nil a = Cons a Nil
-insert (Cons hd tl) b | b < hd = Cons b $Cons hd tl
-insert (Cons hd tl) b | b == hd = Cons hd tl
-insert (Cons hd tl) b | b > hd = Cons hd $ insert tl b
--}
 
 locate :: Set -> Integer -> IO (Lst, Lst)
 locate (SCons pval current) k = do
@@ -34,4 +32,25 @@ contains s k = do
     (_, (Cons hd _)) <- locate s k
     return $ hd == k
 
+add :: Set -> Integer -> IO Bool
+add s k = do
+  ((Cons _ pn), c@(Cons cval _)) <- locate s k
+  case cval of
+    k ->
+      return False
+    _ -> do 
+      trest <- newIORef c
+      writeIORef pn (Cons k trest)
+      return True
 
+remove :: Set -> Integer -> IO Bool
+remove s k = do
+  ((Cons _ pn), (Cons cval cn)) <- locate s k
+  case cval of
+    k -> do
+      cn_content <- readIORef cn
+      writeIORef pn cn_content
+      return True
+    _ -> return False
+      
+        
