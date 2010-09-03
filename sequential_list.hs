@@ -1,4 +1,5 @@
 
+
 {- 
 Todo:
 - generalize Integer to some totally ordered type
@@ -28,17 +29,17 @@ locate p@(Set current) k = do
 
 contains :: Set -> Integer -> IO Bool
 contains s k = do
-  l <- locate s k
+  (_, l) <- locate s k
   case l of
-    (_, (Cons hd _)) -> return $ hd == k
-    (_, Nil) -> return False
+    Cons hd _ -> return $ hd == k
+    Nil -> return False
 
 add :: Set -> Integer -> IO Bool
 add s k = do
   l <- locate s k
   case l of
-    (_, (Cons cval _)) | cval == k -> return False
-    ((Set pn), c) ->
+    (_, Cons cval _) | cval == k -> return False
+    (Set pn, c) ->
        do 
          trest <- newIORef c
          writeIORef pn (Cons k trest)
@@ -46,10 +47,11 @@ add s k = do
 
 remove :: Set -> Integer -> IO Bool
 remove s k = do
-  ((Set pn), (Cons cval cn)) <- locate s k
-  case cval of
-    _ | cval == k -> do
+  (Set pn, Cons cval cn) <- locate s k
+  if cval == k
+    then do
       cn_content <- readIORef cn
       writeIORef pn cn_content
       return True
-    _ -> return False
+    else return False
+
