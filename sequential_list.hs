@@ -9,9 +9,6 @@ module Sequential_List where
 
 import Data.IORef
 
-lst_min :: Integer 
-lst_min = 0
-
 data Lst = Cons Integer (IORef Lst) | Nil
 data Set = Set (IORef Lst)
 
@@ -31,19 +28,21 @@ locate p@(Set current) k = do
 
 contains :: Set -> Integer -> IO Bool
 contains s k = do
-    (_, (Cons hd _)) <- locate s k
-    return $ hd == k
+  l <- locate s k
+  case l of
+    (_, (Cons hd _)) -> return $ hd == k
+    (_, Nil) -> return False
 
 add :: Set -> Integer -> IO Bool
 add s k = do
-  ((Set pn), c@(Cons cval _)) <- locate s k
-  case cval of
-    _ | cval == k ->
-      return False
-    _ -> do 
-      trest <- newIORef c
-      writeIORef pn (Cons k trest)
-      return True
+  l <- locate s k
+  case l of
+    (_, (Cons cval _)) | cval == k -> return False
+    ((Set pn), c) ->
+       do 
+         trest <- newIORef c
+         writeIORef pn (Cons k trest)
+         return True
 
 remove :: Set -> Integer -> IO Bool
 remove s k = do
