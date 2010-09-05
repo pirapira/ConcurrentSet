@@ -1,5 +1,4 @@
 
-
 {- 
 Todo:
 - generalize Integer to some totally ordered type
@@ -10,15 +9,15 @@ module Sequential_List where
 
 import Data.IORef
 
-data Lst = Cons Integer (IORef Lst) | Nil
-data Set = Set (IORef Lst)
+data Lst elt = Cons elt (IORef (Lst elt)) | Nil
+data (Ord elt) => Set elt = Set (IORef (Lst elt))
 
-init :: IO Set
+init :: (Ord elt) => IO (Set elt)
 init = do 
   newref <- newIORef Nil 
   return $ Set newref
 
-locate :: Set -> Integer -> IO (Set, Lst)
+locate :: (Ord elt) => Set elt -> elt -> IO (Set elt, Lst elt)
 locate p@(Set current) k = do
     current_content <- readIORef current 
     case current_content of
@@ -27,14 +26,14 @@ locate p@(Set current) k = do
           if cval < k then locate (Set rest) k
           else return (p, Cons cval rest)
 
-contains :: Set -> Integer -> IO Bool
+contains :: (Ord elt) => Set elt -> elt -> IO Bool
 contains s k = do
   (_, l) <- locate s k
   case l of
     Cons hd _ -> return $ hd == k
     Nil -> return False
 
-add :: Set -> Integer -> IO Bool
+add :: (Ord elt) => Set elt -> elt -> IO Bool
 add s k = do
   l <- locate s k
   case l of
@@ -45,7 +44,7 @@ add s k = do
          writeIORef pn (Cons k trest)
          return True
 
-remove :: Set -> Integer -> IO Bool
+remove :: (Ord elt) => Set elt -> elt -> IO Bool
 remove s k = do
   (Set pn, Cons cval cn) <- locate s k
   if cval == k
