@@ -1,16 +1,15 @@
 
 {- 
 Todo:
-- generalize Integer to some totally ordered type
-- introduce bottom via lifting
+use pointer comparison -- almost OK. since MVar is pointer-comparison
 -}
 
 module ConcurrentList where
 
 import Control.Concurrent.MVar
 
-data Lst elt = Cons elt (MVar (Lst elt, Bool)) | Nil deriving Eq
-data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool))
+data (Ord elt) => Lst elt = Cons elt (Set elt) | Nil deriving Eq
+data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) deriving Eq
 
 -- 
 
@@ -24,9 +23,10 @@ locate p@(Set current) k = do
     (current_content, _) <- readMVar current 
     case current_content of
       Nil -> return (p, Nil)
-      Cons cval rest ->
-          if cval < k then locate (Set rest) k
-          else return (p, Cons cval rest)
+      Cons cval (Set rest) ->
+          if cval < k
+            then locate (Set rest) k
+            else return (p, Cons cval (Set rest))
 
 contains :: (Ord elt) => Set elt -> elt -> IO Bool
 contains s k = do
@@ -41,7 +41,7 @@ remove s k = do
   (pn, pm) <- takeMVar p
   if pn == c && not pm then
       case c of
-        Cons ck cmvar | ck == k -> do
+        Cons ck (Set cmvar) | ck == k -> do
                           (cn, _) <- takeMVar cmvar
                           putMVar cmvar (cn, True)
                           putMVar p (cn, pm)
@@ -65,17 +65,16 @@ add s k = do
       case c of
         Cons ck _ | ck /= k -> do
                tmvar <- newMVar (c, False)
-               putMVar p (Cons k tmvar, pm)
+               putMVar p (Cons k (Set tmvar), pm)
                return True
         Cons _ _ -> do
           putMVar p (pn, pm)
           return False
         Nil -> do
                tmvar <- newMVar (c, False)
-               putMVar p (Cons k tmvar, pm)
+               putMVar p (Cons k (Set tmvar), pm)
                return True
     else
         do 
           putMVar p (pn, pm)
           add s k
-
