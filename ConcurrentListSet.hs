@@ -1,5 +1,11 @@
 module ConcurrentListSet where
 
+{-
+  An implementation of
+  S. Heller, M. Herlihy, V. Luchangco and M. Moir: A List-Based Set Algorithm
+  http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.8911&rep=rep1&type=pdf
+-}
+
 import Control.Concurrent.MVar
 
 data (Ord elt) => Lst elt = Cons elt (Set elt) | Nil deriving Eq
