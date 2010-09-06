@@ -1,4 +1,4 @@
-import ConcurrentList
+import ConcurrentListSet
 import Control.Concurrent
 import System.Random
 
@@ -7,26 +7,26 @@ maxi:: Integer
 mini = 1
 maxi = 9
 
-random_read :: ConcurrentList.Set Integer -> MVar () -> IO ()
+random_read :: Set Integer -> MVar () -> IO ()
 random_read lst mv = do
   p <- randomRIO (mini, maxi)
-  b <- ConcurrentList.contains lst p
+  b <- contains lst p
   putStrLn $ (if b then "o    " else "x    ") ++ show p
   random_read lst mv
 
-randomAddrem :: ConcurrentList.Set Integer -> MVar () -> IO ()
+randomAddrem :: Set Integer -> MVar () -> IO ()
 randomAddrem lst mv = do
     p <- randomRIO (mini, maxi)
-    ConcurrentList.add lst p
+    add lst p
     putStrLn $ "  add" ++ show p
     q <- randomRIO (mini, maxi)
-    ConcurrentList.remove lst q
+    remove lst q
     putStrLn $ "  rm " ++ show q
     randomAddrem lst mv
     
 main :: IO ()
 main = do
-    lst <- ConcurrentList.init
+    lst <- ConcurrentListSet.init
     mv0 <- newEmptyMVar
     mv1 <- newEmptyMVar
     mv2 <- newEmptyMVar

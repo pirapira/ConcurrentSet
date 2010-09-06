@@ -1,15 +1,13 @@
-
-{- 
-Todo:
-use pointer comparison -- almost OK. since MVar is pointer-comparison
--}
-
-module ConcurrentList where
+module ConcurrentListSet where
 
 import Control.Concurrent.MVar
 
 data (Ord elt) => Lst elt = Cons elt (Set elt) | Nil deriving Eq
 data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) deriving Eq
+{- The Bool value in Set indicates whether the node has been removed or not
+   True: removed
+ -}
+
 
 -- 
 
