@@ -32,25 +32,11 @@ main = do
   mv2 <- newEmptyMVar
   mv3 <- newEmptyMVar
   mv4 <- newEmptyMVar
-  mv5 <- newEmptyMVar
-  mv6 <- newEmptyMVar
-  mv7 <- newEmptyMVar
-  forkIO $ randomAddrem lst mv0
-  forkIO $ randomAddrem lst mv2
+--  forkIO $ randomAddrem lst mv0
+--  forkIO $ randomAddrem lst mv2
   forkIO $ random_read lst mv1
-  forkIO $ random_read lst mv3
-  forkIO $ random_read lst mv4
-  forkIO $ random_read lst mv5
-  forkIO $ random_read lst mv6
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
-  forkIO $ random_read lst mv7
+--  forkIO $ random_read lst mv3
+--  forkIO $ random_read lst mv4
   takeMVar mv0
   takeMVar mv1
   takeMVar mv2
