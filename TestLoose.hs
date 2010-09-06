@@ -4,8 +4,8 @@ import System.Random
 
 mini:: Integer
 maxi:: Integer
-mini = 1
-maxi = 9
+mini = 1000
+maxi = 9999
 
 random_read :: Set Integer -> MVar ()-> IO ()
 random_read lst mv = do
@@ -30,9 +30,27 @@ main = do
   mv0 <- newEmptyMVar
   mv1 <- newEmptyMVar
   mv2 <- newEmptyMVar
+  mv3 <- newEmptyMVar
+  mv4 <- newEmptyMVar
+  mv5 <- newEmptyMVar
+  mv6 <- newEmptyMVar
+  mv7 <- newEmptyMVar
   forkIO $ randomAddrem lst mv0
   forkIO $ randomAddrem lst mv2
   forkIO $ random_read lst mv1
+  forkIO $ random_read lst mv3
+  forkIO $ random_read lst mv4
+  forkIO $ random_read lst mv5
+  forkIO $ random_read lst mv6
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
+  forkIO $ random_read lst mv7
   takeMVar mv0
   takeMVar mv1
   takeMVar mv2
