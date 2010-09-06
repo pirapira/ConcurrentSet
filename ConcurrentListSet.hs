@@ -24,13 +24,13 @@ init = do
 
 locate :: (Ord elt) => Set elt -> elt -> IO (Set elt, Lst elt)
 locate p@(Set current) k = do
-    (current_content, _) <- readMVar current 
-    case current_content of
+    (c, _) <- readMVar current 
+    case c of
       Nil -> return (p, Nil)
-      Cons cval (Set rest) ->
+      Cons cval rest ->
           if cval < k
-            then locate (Set rest) k
-            else return (p, Cons cval (Set rest))
+            then locate rest k
+            else return (p, c)
 
 contains :: (Ord elt) => Set elt -> elt -> IO Bool
 contains s k = do
@@ -50,10 +50,7 @@ remove s k = do
                           putMVar cmvar (cn, True)
                           putMVar p (cn, pm)
                           return True
-        Cons _ _ -> do
-               putMVar p (pn, pm)
-               return False
-        Nil -> do
+        _ -> do
                putMVar p (pn, pm)
                return False
     else
@@ -67,14 +64,10 @@ add s k = do
   (pn, pm) <- takeMVar p
   if pn == c && not pm then
       case c of
-        Cons ck _ | ck /= k -> do
-               tmvar <- newMVar (c, False)
-               putMVar p (Cons k (Set tmvar), pm)
-               return True
-        Cons _ _ -> do
-          putMVar p (pn, pm)
-          return False
-        Nil -> do
+        Cons ck _ | ck == k -> do
+               putMVar p (pn, pm)
+               return False
+        _ -> do
                tmvar <- newMVar (c, False)
                putMVar p (Cons k (Set tmvar), pm)
                return True
