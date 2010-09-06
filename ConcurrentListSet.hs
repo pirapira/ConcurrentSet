@@ -9,8 +9,8 @@ module ConcurrentListSet
 
 {-
   An implementation of
-  S. Heller, M. Herlihy, V. Luchangco and M. Moir: A Lazy Concurrent List-Based Set Algorithm
-  http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.8911&rep=rep1&type=pdf
+  S. Heller et al.: A Lazy Concurrent List-Based Set Algorithm. 2005.
+  Http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.8911&rep=rep1&type=pdf
 -}
 
 import Control.Concurrent.MVar
