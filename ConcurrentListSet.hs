@@ -1,31 +1,38 @@
-module ConcurrentListSet where
+module ConcurrentListSet
+    (
+      LSet
+    , makeLSet
+    , contains
+    , insert
+    , delete
+    )  where
 
 {-
   An implementation of
-  S. Heller, M. Herlihy, V. Luchangco and M. Moir: A List-Based Set Algorithm
+  S. Heller, M. Herlihy, V. Luchangco and M. Moir: A List-Based LSet Algorithm
   http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.59.8911&rep=rep1&type=pdf
 -}
 
 import Control.Concurrent.MVar
 
-data (Ord elt) => Lst elt = Cons elt (Set elt) | Nil deriving Eq
-data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) (MVar ()) deriving Eq
+data (Ord elt) => Lst elt = Cons elt (LSet elt) | Nil deriving Eq
+data (Ord elt) => LSet elt = LSet (MVar (Lst elt, Bool)) (MVar ()) deriving Eq
 {-
-  The Bool value in Set indicates whether the node has been removed or not. True means removed.
-  The () value in Set is a write lock. Readers do not have to take this lock.
+  The Bool value in LSet indicates whether the node has been removed or not. True means removed.
+  The () value in LSet is a write lock. Readers do not have to take this lock.
  -}
 
 
 -- 
 
-init :: (Ord elt) => IO (Set elt)
-init = do 
+makeLSet :: (Ord elt) => IO (LSet elt)
+makeLSet = do 
   newref <- newMVar (Nil, False)
   newlck <- newMVar ()
-  return $ Set newref newlck
+  return $ LSet newref newlck
 
-locate :: (Ord elt) => Set elt -> elt -> IO (Set elt, Lst elt)
-locate p@(Set current _) k = do
+locate :: (Ord elt) => LSet elt -> elt -> IO (LSet elt, Lst elt)
+locate p@(LSet current _) k = do
   (c, _) <- readMVar current 
   case c of
     Nil -> return (p, Nil)
@@ -34,21 +41,21 @@ locate p@(Set current _) k = do
         then locate rest k
         else return (p, c)
 
-contains :: (Ord elt) => Set elt -> elt -> IO Bool
+contains :: (Ord elt) => LSet elt -> elt -> IO Bool
 contains s k = do
   (_, l) <- locate s k
   case l of
     Cons hd _ -> return $ hd == k
     Nil       -> return False
 
-remove :: (Ord elt) => Set elt -> elt -> IO Bool
-remove s k = do
-  (Set p lck, c) <- locate s k
+delete :: (Ord elt) => LSet elt -> elt -> IO Bool
+delete s k = do
+  (LSet p lck, c) <- locate s k
   takeMVar lck
   (pn, pm) <- readMVar p
   if pn == c && not pm then
     case c of
-      Cons ck (Set cmvar clck) | ck == k ->
+      Cons ck (LSet cmvar clck) | ck == k ->
            do
              takeMVar clck
              cn <- modifyMVar cmvar (\(cn, _) -> return ((cn, True), cn))
@@ -61,11 +68,11 @@ remove s k = do
              return False
     else do 
       putMVar lck ()
-      remove s k
+      delete s k
 
-add :: (Ord elt) => Set elt -> elt -> IO Bool
-add s k = do
-  (Set p lck, c) <- locate s k
+insert :: (Ord elt) => LSet elt -> elt -> IO Bool
+insert s k = do
+  (LSet p lck, c) <- locate s k
   takeMVar lck
   (pn, pm) <- readMVar p
   if pn == c && not pm then
@@ -76,9 +83,9 @@ add s k = do
       _ -> do
              tmvar <- newMVar (c, False)
              tmlck <- newMVar ()
-             swapMVar p (Cons k (Set tmvar tmlck), pm)
+             swapMVar p (Cons k (LSet tmvar tmlck), pm)
              putMVar lck ()
              return True
     else do
       putMVar lck ()
-      add s k
+      insert s k
