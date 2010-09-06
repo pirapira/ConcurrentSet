@@ -55,6 +55,7 @@ remove s k = do
     else
         do 
           putMVar p (pn, pm)
+          putStrLn "abort remove!"
           remove s k
 
 add :: (Ord elt) => Set elt -> elt -> IO Bool
@@ -77,4 +78,5 @@ add s k = do
     else
         do 
           putMVar p (pn, pm)
+          putStrLn "abort add!"
           add s k

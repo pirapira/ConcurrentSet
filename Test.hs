@@ -2,43 +2,38 @@ import ConcurrentList
 import Control.Concurrent
 import System.Random
 
-random_read :: ConcurrentList.Set Bool -> MVar () -> Integer -> MVar () -> IO ()
-random_read _ mv 0 _ = do
-  putMVar mv ()
-  return ()
-random_read lst mv n mvio = do
-  p <- randomIO
-  takeMVar mvio
+mini:: Integer
+maxi:: Integer
+mini = 1
+maxi = 9
+
+random_read :: ConcurrentList.Set Integer -> MVar () -> IO ()
+random_read lst mv = do
+  p <- randomRIO (mini, maxi)
   b <- ConcurrentList.contains lst p
   putStrLn $ (if b then "o    " else "x    ") ++ show p
-  putMVar mvio ()
-  random_read lst mv (n - 1) mvio
+  random_read lst mv
 
-randomAddrem :: ConcurrentList.Set Bool -> MVar () -> Integer -> MVar () -> IO ()
-randomAddrem _ mv 0 _ = do
-    putMVar mv ()
-    return ()
-randomAddrem lst mv n mvio = do
-    p <- randomIO
-    takeMVar mvio
+randomAddrem :: ConcurrentList.Set Integer -> MVar () -> IO ()
+randomAddrem lst mv = do
+    p <- randomRIO (mini, maxi)
     ConcurrentList.add lst p
-    putStrLn $ ":add " ++ show p
-    putMVar mvio ()
-    q <- randomIO
-    takeMVar mvio
+    putStrLn $ "  add" ++ show p
+    q <- randomRIO (mini, maxi)
     ConcurrentList.remove lst q
-    putStrLn $ ":rm  " ++ show q
-    putMVar mvio ()
-    randomAddrem lst mv (n - 1) mvio
+    putStrLn $ "  rm " ++ show q
+    randomAddrem lst mv
     
 main :: IO ()
 main = do
     lst <- ConcurrentList.init
     mv0 <- newEmptyMVar
     mv1 <- newEmptyMVar
-    mvio <- newMVar ()
-    forkIO $ randomAddrem lst mv0 10000 mvio
-    forkIO $ random_read lst mv1 10000 mvio
+    mv2 <- newEmptyMVar
+    forkIO $ randomAddrem lst mv0
+    forkIO $ randomAddrem lst mv2
+    forkIO $ random_read lst mv1
     takeMVar mv0
     takeMVar mv1
+    takeMVar mv2
     return ()
