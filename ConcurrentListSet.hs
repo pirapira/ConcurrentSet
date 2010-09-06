@@ -9,9 +9,10 @@ module ConcurrentListSet where
 import Control.Concurrent.MVar
 
 data (Ord elt) => Lst elt = Cons elt (Set elt) | Nil deriving Eq
-data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) deriving Eq
-{- The Bool value in Set indicates whether the node has been removed or not
-   True: removed
+data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) (MVar ()) deriving Eq
+{-
+  The Bool value in Set indicates whether the node has been removed or not. True means removed.
+  The () value in Set is a write lock. Readers do not have to take this lock.
  -}
 
 
@@ -20,10 +21,11 @@ data (Ord elt) => Set elt = Set (MVar (Lst elt, Bool)) deriving Eq
 init :: (Ord elt) => IO (Set elt)
 init = do 
   newref <- newMVar (Nil, False)
-  return $ Set newref
+  newlck <- newMVar ()
+  return $ Set newref newlck
 
 locate :: (Ord elt) => Set elt -> elt -> IO (Set elt, Lst elt)
-locate p@(Set current) k = do
+locate p@(Set current _) k = do
   (c, _) <- readMVar current 
   case c of
     Nil -> return (p, Nil)
@@ -41,36 +43,42 @@ contains s k = do
 
 remove :: (Ord elt) => Set elt -> elt -> IO Bool
 remove s k = do
-  (Set p, c) <- locate s k
-  (pn, pm) <- takeMVar p
+  (Set p lck, c) <- locate s k
+  takeMVar lck
+  (pn, pm) <- readMVar p
   if pn == c && not pm then
     case c of
-      Cons ck (Set cmvar) | ck == k ->
+      Cons ck (Set cmvar clck) | ck == k ->
            do
-             (cn, _) <- takeMVar cmvar
-             putMVar cmvar (cn, True)
-             putMVar p (cn, pm)
+             takeMVar clck
+             cn <- modifyMVar cmvar (\(cn, _) -> return ((cn, True), cn))
+             putMVar clck ()
+             swapMVar p (cn, pm)
+             putMVar lck ()
              return True
       _ -> do
-             putMVar p (pn, pm)
+             putMVar lck ()
              return False
     else do 
-      putMVar p (pn, pm)
+      putMVar lck ()
       remove s k
 
 add :: (Ord elt) => Set elt -> elt -> IO Bool
 add s k = do
-  (Set p, c) <- locate s k
-  (pn, pm) <- takeMVar p
+  (Set p lck, c) <- locate s k
+  takeMVar lck
+  (pn, pm) <- readMVar p
   if pn == c && not pm then
     case c of
       Cons ck _ | ck == k -> do
-             putMVar p (pn, pm)
+             putMVar lck ()
              return False
       _ -> do
              tmvar <- newMVar (c, False)
-             putMVar p (Cons k (Set tmvar), pm)
+             tmlck <- newMVar ()
+             swapMVar p (Cons k (Set tmvar tmlck), pm)
+             putMVar lck ()
              return True
     else do
-      putMVar p (pn, pm)
+      putMVar lck ()
       add s k
